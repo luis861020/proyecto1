@@ -1,18 +1,21 @@
-# Build and Release Folders
-bin-debug/
-bin-release/
-[Oo]bj/
-[Bb]in/
+# Gradle
+.gradle/
+build/
+captures/
+# El wrapper SÍ se versiona (no ignorar gradle-wrapper.jar)
 
-# Other files and folders
-.settings/
+# Android Studio / IntelliJ
+*.iml
+.idea/
+local.properties
 
-# Executables
-*.swf
-*.air
-*.ipa
+# Compilados
 *.apk
+*.aab
+*.ap_
+*.dex
+*.class
 
-# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-# should NOT be excluded as they contain compiler settings and other important
-# information for Eclipse / Flash Builder.
+# Logs y temporales
+*.log
+.DS_Store
