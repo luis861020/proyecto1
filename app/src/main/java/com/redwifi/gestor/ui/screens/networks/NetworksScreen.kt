@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.Refresh
@@ -34,12 +35,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.redwifi.gestor.data.net.LocationUtils
 import com.redwifi.gestor.domain.SignalMath
 import com.redwifi.gestor.domain.model.CurrentConnection
 import com.redwifi.gestor.domain.model.Security
@@ -56,6 +59,7 @@ fun NetworksScreen(
     viewModel: NetworksViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
@@ -72,7 +76,20 @@ fun NetworksScreen(
         )
 
         if (!state.wifiEnabled) {
-            WifiOffBanner()
+            ActionBanner(
+                icon = Icons.Rounded.WifiOff,
+                text = "El WiFi está apagado. Actívalo para escanear redes.",
+                actionLabel = "Abrir ajustes de WiFi",
+                onAction = { LocationUtils.openWifiSettings(context) },
+            )
+        } else if (!state.locationEnabled && state.networks.isEmpty()) {
+            ActionBanner(
+                icon = Icons.Rounded.LocationOn,
+                text = "Activa la Ubicación del sistema para ver las redes WiFi. " +
+                    "Android la exige para escanear (la app no te rastrea).",
+                actionLabel = "Activar ubicación",
+                onAction = { LocationUtils.openLocationSettings(context) },
+            )
         }
 
         LazyColumn(
@@ -258,21 +275,42 @@ private fun SecurityPill(security: Security) {
 }
 
 @Composable
-private fun WifiOffBanner() {
-    Row(
-        Modifier
+private fun ActionBanner(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+    actionLabel: String,
+    onAction: () -> Unit,
+) {
+    ElevatedCard(
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .height(48.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+        ),
     ) {
-        Icon(Icons.Rounded.WifiOff, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-        Spacer(Modifier.width(10.dp))
-        Text(
-            "El WiFi está apagado. Actívalo para escanear redes.",
-            color = MaterialTheme.colorScheme.error,
-            fontSize = 14.sp,
-        )
+        Row(
+            Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onErrorContainer)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    fontSize = 13.sp,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    actionLabel,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    modifier = Modifier.clickable(onClick = onAction),
+                )
+            }
+        }
     }
 }
 
@@ -292,8 +330,18 @@ private fun EmptyNetworks() {
         )
         Spacer(Modifier.height(12.dp))
         Text(
-            "Sin redes todavía. Pulsa actualizar.",
+            "Sin redes todavía.",
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "Comprueba que el WiFi y la Ubicación del sistema estén activados, " +
+                "y pulsa el botón de actualizar (arriba a la derecha).",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 13.sp,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 24.dp),
         )
     }
 }

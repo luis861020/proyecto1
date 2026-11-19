@@ -67,6 +67,19 @@ data class WifiNetwork(
         get() = SignalMath.rssiToDistanceMeters(rssi, frequencyMhz)
 }
 
+/** Tipo de dispositivo inferido (celular, computador, TV, etc.). */
+enum class DeviceType(val label: String) {
+    ROUTER("Router"),
+    THIS_PHONE("Este teléfono"),
+    PHONE("Teléfono / Celular"),
+    COMPUTER("Computador"),
+    TV("TV / Streaming"),
+    CONSOLE("Consola"),
+    PRINTER("Impresora"),
+    IOT("Smart / IoT"),
+    UNKNOWN("Dispositivo"),
+}
+
 /** Dispositivo encontrado en la red local (misma subred). */
 data class ConnectedDevice(
     val ipAddress: String,
@@ -76,14 +89,23 @@ data class ConnectedDevice(
     val isGateway: Boolean = false,
     val isThisDevice: Boolean = false,
     val responseTimeMs: Long? = null,
+    val type: DeviceType = DeviceType.UNKNOWN,
 ) {
+    /** Nombre de host sin sufijos de red (.lan/.local/.home). */
+    val cleanHostName: String?
+        get() = hostName
+            ?.removeSuffix(".lan")
+            ?.removeSuffix(".local")
+            ?.removeSuffix(".home")
+            ?.takeIf { it.isNotBlank() && it != ipAddress }
+
     val displayName: String
         get() = when {
             isGateway -> "Router / Puerta de enlace"
             isThisDevice -> "Este teléfono"
-            !hostName.isNullOrBlank() && hostName != ipAddress -> hostName
-            !vendor.isNullOrBlank() -> vendor
-            else -> "Dispositivo"
+            !cleanHostName.isNullOrBlank() -> cleanHostName!!
+            !vendor.isNullOrBlank() -> vendor!!
+            else -> type.label
         }
 }
 

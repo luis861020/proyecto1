@@ -92,14 +92,18 @@ class DeviceScanner(context: Context) {
             addr.canonicalHostName.takeIf { it != ip }
         }.getOrNull()
 
+        val vendor = OuiDatabase.lookup(mac)
+        val isGateway = gateway != null && ip == gateway
+
         return ConnectedDevice(
             ipAddress = ip,
             hostName = host,
             macAddress = mac,
-            vendor = OuiDatabase.lookup(mac),
-            isGateway = gateway != null && ip == gateway,
+            vendor = vendor,
+            isGateway = isGateway,
             isThisDevice = isMe,
             responseTimeMs = if (reachable && !isMe) elapsed else null,
+            type = DeviceClassifier.classify(host, vendor, isGateway, isMe),
         )
     }
 

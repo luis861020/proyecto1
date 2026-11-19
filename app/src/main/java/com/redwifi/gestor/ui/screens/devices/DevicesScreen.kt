@@ -15,11 +15,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Computer
+import androidx.compose.material.icons.rounded.DevicesOther
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.Print
 import androidx.compose.material.icons.rounded.Radar
 import androidx.compose.material.icons.rounded.Router
 import androidx.compose.material.icons.rounded.Smartphone
+import androidx.compose.material.icons.rounded.SportsEsports
+import androidx.compose.material.icons.rounded.Tv
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -48,10 +54,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.redwifi.gestor.data.net.RouterTools
 import com.redwifi.gestor.domain.model.ConnectedDevice
+import com.redwifi.gestor.domain.model.DeviceType
 import com.redwifi.gestor.ui.components.Pill
 import com.redwifi.gestor.ui.theme.Amber
+import com.redwifi.gestor.ui.theme.Coral
 import com.redwifi.gestor.ui.theme.Cyan
 import com.redwifi.gestor.ui.theme.Teal
+import com.redwifi.gestor.ui.theme.Violet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -199,10 +208,16 @@ private fun DisconnectInfoCard(onOpenRouter: () -> Unit) {
 
 @Composable
 private fun DeviceRow(device: ConnectedDevice, onManage: () -> Unit) {
-    val (icon, accent) = when {
-        device.isGateway -> Icons.Rounded.Router to Teal
-        device.isThisDevice -> Icons.Rounded.Smartphone to Cyan
-        else -> Icons.Rounded.Radar to Amber
+    val (icon, accent) = when (device.type) {
+        DeviceType.ROUTER -> Icons.Rounded.Router to Teal
+        DeviceType.THIS_PHONE -> Icons.Rounded.Smartphone to Cyan
+        DeviceType.PHONE -> Icons.Rounded.Smartphone to Violet
+        DeviceType.COMPUTER -> Icons.Rounded.Computer to Cyan
+        DeviceType.TV -> Icons.Rounded.Tv to Violet
+        DeviceType.CONSOLE -> Icons.Rounded.SportsEsports to Coral
+        DeviceType.PRINTER -> Icons.Rounded.Print to Amber
+        DeviceType.IOT -> Icons.Rounded.Memory to Amber
+        DeviceType.UNKNOWN -> Icons.Rounded.DevicesOther to Amber
     }
     ElevatedCard(
         Modifier.fillMaxWidth(),
@@ -232,11 +247,11 @@ private fun DeviceRow(device: ConnectedDevice, onManage: () -> Unit) {
                         fontSize = 15.sp,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
-                    if (device.isGateway) {
+                    if (!device.isGateway && !device.isThisDevice) {
                         Spacer(Modifier.size(6.dp))
-                        Pill("Router", Teal)
+                        Pill(device.type.label, accent)
                     }
-                }
+}
                 Spacer(Modifier.height(3.dp))
                 Text(
                     device.ipAddress + (device.macAddress?.let { "  ·  $it" } ?: ""),

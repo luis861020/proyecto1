@@ -3,6 +3,7 @@ package com.redwifi.gestor.ui.screens.networks
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.redwifi.gestor.data.net.LocationUtils
 import com.redwifi.gestor.data.wifi.WifiScanner
 import com.redwifi.gestor.domain.model.CurrentConnection
 import com.redwifi.gestor.domain.model.WifiNetwork
@@ -17,11 +18,13 @@ data class NetworksUiState(
     val networks: List<WifiNetwork> = emptyList(),
     val current: CurrentConnection? = null,
     val wifiEnabled: Boolean = true,
+    val locationEnabled: Boolean = true,
     val loading: Boolean = true,
 )
 
 class NetworksViewModel(app: Application) : AndroidViewModel(app) {
 
+    private val appContext = app
     private val scanner = WifiScanner(app)
 
     private val _state = MutableStateFlow(NetworksUiState())
@@ -45,6 +48,7 @@ class NetworksViewModel(app: Application) : AndroidViewModel(app) {
                     it.copy(
                         current = scanner.currentConnection(),
                         wifiEnabled = scanner.isWifiEnabled(),
+                        locationEnabled = LocationUtils.isLocationEnabled(appContext),
                     )
                 }
                 delay(2500)
