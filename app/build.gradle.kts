@@ -20,7 +20,22 @@ android {
         }
     }
 
+    signingConfigs {
+        // Clave de depuración fija y versionada para que TODAS las compilaciones
+        // (CI y local) firmen igual. Así se puede actualizar el APK sin desinstalar.
+        // Una clave de depuración no es secreta: su contraseña estándar es "android".
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
