@@ -1,0 +1,64 @@
+1
+00:00:00,000 --> 00:00:03,354
+¿Tienes multas o fotomultas
+y no sabes cómo actuar?
+
+2
+00:00:03,354 --> 00:00:06,943
+En LaMulta, el análisis inicial
+es gratis.
+
+3
+00:00:06,943 --> 00:00:11,190
+Elige tu tipo de documento, ingresa
+el número y autoriza la consulta.
+
+4
+00:00:11,190 --> 00:00:14,288
+LaMulta busca tus registros
+en el SIMIT.
+
+5
+00:00:14,288 --> 00:00:19,513
+Mientras corre la consulta, ingresa tu
+correo y confírmalo con el código que recibas.
+
+6
+00:00:19,513 --> 00:00:23,713
+La IA revisa las fechas disponibles
+y te explica qué puedes hacer.
+
+7
+00:00:23,713 --> 00:00:26,666
+Si falta un dato importante,
+te hará una pregunta.
+
+8
+00:00:26,666 --> 00:00:29,918
+Por ejemplo, si tuviste
+un acuerdo de pago.
+
+9
+00:00:29,918 --> 00:00:35,198
+Si quieres avanzar, revisa los datos de
+tu escrito, elige un plan y paga por Wompi.
+
+10
+00:00:35,198 --> 00:00:40,790
+Con el pago confirmado, un abogado revisa
+el documento antes de que lo recibas por correo.
+
+11
+00:00:40,790 --> 00:00:44,900
+En Mi expediente puedes retomar el caso,
+registrar el radicado
+
+12
+00:00:44,900 --> 00:00:48,828
+y subir la respuesta de la autoridad
+para evaluar el siguiente paso.
+
+13
+00:00:48,828 --> 00:00:55,030
+Empieza con tu documento
+en lamulta.com.co.

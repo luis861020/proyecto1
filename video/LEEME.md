@@ -1,4 +1,6 @@
-# Video LaMulta (vertical, 70 s)
+# Video LaMulta (vertical)
+
+- **`lamulta-vertical-60s.mp4`: versión dinámica de 55 s** (transiciones de 0,18 s con zoom, música con pulso, voz ×1,05). Se genera con `python3 video/render60.py <LaMulta-video> video/voz <salida>`. SRT: `Subtitulos-LaMulta-60s.srt`.
 
 - **`lamulta-vertical-voz.mp4`: versión con locución (voz «Lina», ElevenLabs) + música atenuada bajo la voz, −14 LUFS. Subtítulos sincronizados con la voz.**
 - `voz.wav`, `voz/voz-0X.mp3`, `Subtitulos-LaMulta-voz.srt`: locución completa, frases por escena y SRT retemporizado. `voz.py` los regenera (requiere la clave de ElevenLabs en el entorno).
