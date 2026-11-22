@@ -10,7 +10,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 PKG = Path(sys.argv[1]); OUT = Path(sys.argv[2]); OUT.mkdir(parents=True, exist_ok=True)
-SRT = Path(__file__).with_name("Subtitulos-LaMulta.srt")
+SRT = Path(sys.argv[3]) if len(sys.argv) > 3 and not sys.argv[3].startswith("--") else Path(__file__).with_name("Subtitulos-LaMulta.srt")
 W, H, FPS, DUR = 1080, 1920, 30, 70.0
 
 PET = (11, 38, 51); SURF = (18, 49, 62); MINT = (185, 223, 203); YEL = (246, 211, 74)
@@ -230,16 +230,16 @@ def sc_carpeta(t):
     f = bg(t); paste_guide(f, CARP[int(t * 2.6) % 4], W / 2, 1560, 1180, t, breathe=False); return f
 
 def sc_analisis(t):
-    f = bg(t); phone(f, ANAL, 300 * seg(t, 28.4, 30.0), [(31, 698, 359, 820, hl_mock(t, 29.8, 31.6))]); return f
+    f = bg(t); phone(f, ANAL, 300 * seg(t, 28.4, 29.4), [(31, 698, 359, 820, hl_mock(t, 29.2, 30.4))]); return f
 
 def ori_extra(view, d, scroll):
-    if ori_extra.t > 35.6:
+    if ori_extra.t > 33.8:
         cx, cy = 54 * SC, (1220 - scroll) * SC; d.ellipse([cx - 13, cy - 13, cx + 13, cy + 13], fill=MINT)
 
 def sc_orient(t):
     f = bg(t); ori_extra.t = t
-    scroll = 500 + 330 * seg(t, 33.6, 34.8)
-    phone(f, ORI, scroll, [(31, 700, 359, 1030, hl_mock(t, 31.8, 33.8)), (31, 1198, 359, 1244, hl_mock(t, 34.8, 38.6))], extra=ori_extra)
+    scroll = 500 + 330 * seg(t, 32.0, 33.0)
+    phone(f, ORI, scroll, [(31, 700, 359, 1030, hl_mock(t, 29.9, 32.0)), (31, 1198, 359, 1244, hl_mock(t, 33.0, 38.6))], extra=ori_extra)
     return f
 
 def sc_escrito(t):
@@ -263,7 +263,7 @@ def sc_cierre(t):
     return f
 
 SCENES = [(0, 7, sc_intro), (7, 12.15, sc_form), (12.15, 16, sc_lupa), (16, 24, sc_correo), (24, 28.2, sc_carpeta),
-          (28.2, 31.6, sc_analisis), (31.6, 39, sc_orient), (39, 46.05, sc_escrito), (46.05, 54, sc_estado),
+          (28.2, 30.2, sc_analisis), (30.2, 39, sc_orient), (39, 46.05, sc_escrito), (46.05, 54, sc_estado),
           (54, 64, sc_exp), (64, 70.01, sc_cierre)]
 CHIPS = [(0.6, 7, "Análisis inicial gratis"), (7, 16, "Consulta en el SIMIT"), (16, 24, "Confirma tu correo"),
          (24, 39, "Entiende qué puedes hacer"), (39, 54, "Revisión jurídica antes de la entrega"), (54, 64, "Mi expediente")]
