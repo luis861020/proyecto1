@@ -1,0 +1,16 @@
+{
+  "titulo": "Mitos sobre la prescripción",
+  "segmentos": [
+    {"tipo": "guia", "pose": 0, "chip": "Mitos sobre la prescripción",
+     "voz": "Tres mitos sobre la prescripción de multas de tránsito."},
+    {"tipo": "tarjeta", "grande": "Mito 1", "texto": "«Toda multa vieja ya prescribió»", "pose": 1,
+     "voz": "Mito uno: toda multa vieja ya prescribió. Falso. Si te notificaron un mandamiento de pago a tiempo, el conteo se reinicia."},
+    {"tipo": "tarjeta", "grande": "Mito 2", "texto": "«Un acuerdo de pago no cambia nada»", "pose": 1,
+     "voz": "Mito dos: firmar un acuerdo de pago no cambia nada. En realidad, puede interrumpir el conteo de la prescripción."},
+    {"tipo": "tarjeta", "grande": "Mito 3", "texto": "«Desaparece sola del SIMIT»", "pose": 2,
+     "voz": "Mito tres: la multa desaparece sola. Aunque debería declararse de oficio, muchas veces hay que solicitarlo."},
+    {"tipo": "lupa", "chip": "Revisión gratis de tus fechas",
+     "voz": "En LaMulta revisamos gratis tus multas y te explicamos qué puedes hacer en tu caso."},
+    {"tipo": "cierre", "voz": "Entra a lamulta punto com punto co."}
+  ]
+}

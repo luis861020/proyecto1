@@ -1,0 +1,16 @@
+{
+  "titulo": "¿Qué es la prescripción de una multa?",
+  "segmentos": [
+    {"tipo": "guia", "pose": 0, "chip": "Prescripción de multas",
+     "voz": "¿Tienes una multa de tránsito de hace varios años? Puede que ya no te la puedan cobrar. Eso se llama prescripción."},
+    {"tipo": "tarjeta", "grande": "3 años", "texto": "contados desde la fecha de la infracción", "pose": 1,
+     "voz": "Según el Código Nacional de Tránsito, la sanción prescribe en tres años, contados desde la fecha de la infracción."},
+    {"tipo": "linea", "chip": "Ojo con el mandamiento de pago",
+     "voz": "Pero ojo: si dentro de ese plazo te notificaron un mandamiento de pago, el conteo se interrumpe y vuelve a empezar."},
+    {"tipo": "tarjeta", "grande": "Solicítala", "texto": "en la práctica, muchas veces debes pedir que la declaren", "pose": 2,
+     "voz": "Y aunque la ley dice que debe declararse de oficio, en la práctica muchas veces tienes que solicitarla."},
+    {"tipo": "lupa", "chip": "Revisión gratis de tus fechas",
+     "voz": "En LaMulta revisamos gratis las fechas de tus multas en el SIMIT y te explicamos qué puedes hacer."},
+    {"tipo": "cierre", "voz": "Entra a lamulta punto com punto co."}
+  ]
+}

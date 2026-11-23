@@ -1,0 +1,16 @@
+{
+  "titulo": "¿Qué es el mandamiento de pago?",
+  "segmentos": [
+    {"tipo": "guia", "pose": 0, "chip": "Mandamiento de pago",
+     "voz": "¿Te llegó un documento que dice mandamiento de pago? Te explico qué significa."},
+    {"tipo": "tarjeta", "grande": "Cobro coactivo", "texto": "la autoridad inicia el cobro forzoso de la multa", "pose": 1,
+     "voz": "Es el acto con el que la autoridad de tránsito inicia el cobro coactivo de una multa que no se ha pagado."},
+    {"tipo": "linea", "chip": "Interrumpe la prescripción",
+     "voz": "Si te lo notifican dentro de los tres años siguientes a la infracción, interrumpe la prescripción y el conteo vuelve a empezar."},
+    {"tipo": "tarjeta", "grande": "Revisa la fecha", "texto": "importa cuándo te lo notificaron, no solo cuándo lo firmaron", "pose": 2,
+     "voz": "Por eso es clave saber la fecha en que te lo notificaron, no solo la fecha en que se firmó."},
+    {"tipo": "lupa", "chip": "Revisión gratis de tus fechas",
+     "voz": "En LaMulta revisamos gratis tus multas en el SIMIT y te ayudamos a entender en qué etapa está cada una."},
+    {"tipo": "cierre", "voz": "Entra a lamulta punto com punto co."}
+  ]
+}
