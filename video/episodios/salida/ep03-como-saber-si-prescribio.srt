@@ -1,0 +1,52 @@
+1
+00:00:00,350 --> 00:00:03,305
+¿Cómo saber si tu multa podría
+estar prescrita?
+
+2
+00:00:03,380 --> 00:00:05,203
+Necesitas mirar dos fechas.
+
+3
+00:00:05,203 --> 00:00:07,700
+La primera es la fecha de la
+infracción.
+
+4
+00:00:07,700 --> 00:00:10,296
+Desde ahí empiezan a contar los
+tres años.
+
+5
+00:00:10,616 --> 00:00:13,576
+La segunda es la fecha en que te
+notificaron el mandamiento de
+
+6
+00:00:13,576 --> 00:00:15,475
+pago, si es que existe.
+
+7
+00:00:15,795 --> 00:00:19,777
+El SIMIT muestra tus multas, pero
+no siempre las notificaciones.
+
+8
+00:00:19,777 --> 00:00:23,191
+Si tienes dudas, puedes pedir
+copia del expediente al organismo
+
+9
+00:00:23,191 --> 00:00:27,650
+de tránsito. En LaMulta
+consultamos tus multas gratis y la
+
+10
+00:00:27,650 --> 00:00:30,733
+IA revisa las fechas disponibles
+para orientarte.
+
+11
+00:00:31,053 --> 00:00:34,136
+Entra a lamulta punto com punto
+co.
