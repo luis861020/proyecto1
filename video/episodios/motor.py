@@ -85,52 +85,136 @@ def chip(d, s, k, y=120):
     rr(d, [W / 2 - tw / 2 - 40, y0, W / 2 + tw / 2 + 40, y0 + 96], 48, fill=MINT + (int(245 * k),))
     d.text((W / 2 - tw / 2, y0 + 22), s, font=fnt, fill=PET + (int(255 * k),))
 
+# ---------- animación del personaje ----------
+import random
+_FC = {}
+def F(w, s):
+    k_ = (w, int(s))
+    if k_ not in _FC: _FC[k_] = font(w, int(s))
+    return _FC[k_]
+
+ENV = None
+def env_at(tt):  # intensidad de la voz (0-1) para que la guía "hable"
+    global ENV
+    if ENV is None:
+        wv = OUT / f"{slug}-voz.wav"
+        if not wv.exists(): voice(wv)
+        with wave.open(str(wv)) as w_: a_ = np.frombuffer(w_.readframes(w_.getnframes()), dtype="<i2").reshape(-1, 2)[:, 0].astype(np.float32) / 32768
+        hop = 48000 // FPS; n_ = len(a_) // hop; r_ = np.sqrt((a_[:n_ * hop].reshape(n_, hop) ** 2).mean(1))
+        r_ = np.clip(r_ / (np.percentile(r_, 95) + 1e-6), 0, 1); sm = np.zeros_like(r_); v_ = 0.0
+        for j_, q_ in enumerate(r_): v_ += (q_ - v_) * (0.45 if q_ > v_ else 0.12); sm[j_] = v_
+        ENV = sm
+    return float(ENV[min(max(int(tt * FPS), 0), len(ENV) - 1)])
+
+# pausas de frase dentro de cada segmento -> cambios de gesto
+_pos = 0
+for x_ in TL:
+    L_ = len(x_["seg"]["voz"]); idx = [j for j in range(_pos, _pos + L_ - 1) if full[j] in ".?!,:" and j - _pos > 8]
+    x_["beats"] = [amap(CE[j]) for j in idx]; _pos += L_ + 1
+
+RNG = random.Random(slug)
+GUIA_SHOTS = [("medio", W / 2, 1600, 1250), ("primer", W / 2 + 30, 2120, 1850), ("izq", 410, 1680, 1420), ("der", 670, 1680, 1420)]
+last = None
+for i_, x_ in enumerate(TL):
+    ty_ = x_["seg"]["tipo"]
+    if ty_ == "guia":
+        opts = [s_ for s_ in GUIA_SHOTS if s_[0] != last and not (i_ == 0 and s_[0] == "primer")]; x_["shot"] = RNG.choice(opts); last = x_["shot"][0]
+    elif ty_ in ("lupa", "carpeta"):
+        x_["shot"] = RNG.choice([("medio", W / 2, 1580, 1200), ("primer", W / 2, 1900, 1650)])
+    x_["layout"] = RNG.choice(["arriba", "lado"]) if ty_ == "tarjeta" else None
+    x_["side"] = RNG.choice([-1, 1]); x_["cam"] = RNG.choice(["in", "out"]); x_["trans"] = RNG.choice(["punch", "barrido"]) if i_ else None
+for i_ in range(1, len(TL)):  # evita dos tarjetas seguidas con el mismo diseño
+    if TL[i_]["layout"] and TL[i_]["layout"] == TL[i_ - 1].get("layout"): TL[i_]["layout"] = "lado" if TL[i_]["layout"] == "arriba" else "arriba"
+
+_GC = {}
+def _scaled(im, h):
+    key = (id(im), int(h / 8))
+    if key not in _GC:
+        if len(_GC) > 60: _GC.clear()
+        s_ = h / im.height; _GC[key] = fade_bottom(im.resize((int(im.width * s_), int(im.height * s_)), Image.LANCZOS))
+    return _GC[key]
+
+def guide(f, ims, cx, bottom, height, tt, k=9.0, slide=0, seed=0.0, talk=True):
+    """ims: [(imagen, peso)] para fundir entre gestos o cuadros."""
+    e = env_at(tt) if talk else 0.0
+    h = height * (1 + 0.012 * e + 0.004 * math.sin(tt * 2.1 + seed))
+    ang = 0.7 * math.sin(tt * 0.7 + seed) + 1.1 * e * math.sin(tt * 5.3 + seed)
+    dx = slide * (1 - ease(k / 0.55)) * W * 0.75; dy = -14 * e + 5 * math.sin(tt * 1.3 + seed)
+    for im, wgt in ims:
+        if wgt <= 0.01: continue
+        g = _scaled(im, h).rotate(ang, Image.BICUBIC, expand=True)
+        m = g.getchannel("A") if wgt >= 0.99 else g.getchannel("A").point(lambda v, w_=wgt: int(v * w_))
+        f.paste(g, (int(cx - g.width / 2 + dx), int(bottom - g.height + dy)), m)
+
+def gesture(x, tt, base=0):
+    n = sum(1 for b in x["beats"] if b < tt); prev = [b for b in x["beats"] if b < tt]
+    a = ease((tt - prev[-1]) / 0.14) if prev else 1.0
+    cur, old = POSE[[0, 2][(base + n) % 2]], POSE[[0, 2][(base + n - 1) % 2]]
+    return [(old, 1 - a), (cur, a)] if a < 1 else [(cur, 1.0)]
+
+def anim_frames(fr, tt, fps=5.0):
+    seq = [0, 1, 2, 3, 2, 1]; u = tt * fps; i0 = int(u) % 6; a = ease((u - int(u) - 0.8) / 0.2)
+    return [(fr[seq[i0]], 1 - a), (fr[seq[(i0 + 1) % 6]], a)]
+
+def pop(k):  # escala con rebote para textos grandes
+    return 1 + 0.22 * math.exp(-k * 7) * math.cos(k * 13)
+
+def card_big(d, s, cx, y, maxw, k, a):
+    big = s["grande"]; fs = 210
+    while d.textlength(big, font=F("b", fs)) > maxw and fs > 70: fs -= 6
+    fs2 = fs * pop(k); fb = F("b", fs2); bw = d.textlength(big, font=fb)
+    d.text((cx - bw / 2, y + (fs - fs2) * 0.5), big, font=fb, fill=YEL + (int(255 * a),)); return fs
+
 def draw_seg(x, tt):
-    s = x["seg"]; k = tt - x["a"]; p = k / (x["b"] - x["a"]); f = bg(tt); ty = s["tipo"]
+    s = x["seg"]; k = tt - x["a"]; p = k / (x["b"] - x["a"]); f = bg(tt); ty = s["tipo"]; sd = x["side"]; seed = sum(map(ord, slug)) % 7 + x["a"]
+    first = x is TL[0]
     if ty == "guia":
-        paste_guide(f, POSE[s.get("pose", 0)], W / 2, 1600, 1250, tt)
+        _, cx, bt, hh = x["shot"]
+        guide(f, gesture(x, tt, s.get("pose", 0) // 2), cx, bt, hh, tt, k, slide=sd if first else 0, seed=seed)
+        if first and 0.5 < k < 4.2:
+            a = min(ease((k - 0.5) / 0.4), 1 - ease((k - 3.8) / 0.4)); d = ImageDraw.Draw(f, "RGBA"); tx_ = "Tu guía digital · LaMulta"; fn = F("s", 38)
+            tw = d.textlength(tx_, font=fn); x0 = 60 - 40 * (1 - a)
+            rr(d, [x0, 1440, x0 + tw + 70, 1516], 38, fill=YEL + (int(240 * a),)); d.text((x0 + 35, 1458), tx_, font=fn, fill=PET + (int(255 * a),))
     elif ty in ("lupa", "carpeta"):
-        fr = LUPA if ty == "lupa" else CARP
-        paste_guide(f, fr[int(tt * 3) % 4], W / 2, 1580, 1200, tt, breathe=False)
+        _, cx, bt, hh = x["shot"]
+        guide(f, anim_frames(LUPA if ty == "lupa" else CARP, tt), cx, bt, hh, tt, k, seed=seed, talk=False)
     elif ty == "tarjeta":
-        paste_guide(f, POSE[s.get("pose", 1)], W / 2 + 40, 1580, 900, tt)
-        d = ImageDraw.Draw(f, "RGBA"); a = ease(k / 0.4)
-        y0 = 260 + 40 * (1 - a); rr(d, [70, y0, W - 70, y0 + 560], 48, fill=SURF + (int(238 * a),), outline=LINE + (int(255 * a),), width=3)
-        big = s["grande"]; fs = 200 if len(big) <= 8 else (150 if len(big) <= 12 else 116)
-        fb = font("b", fs); bw = d.textlength(big, font=fb)
-        sc = 1 + 0.12 * (1 - ease(k / 0.5))
-        d.text((W / 2 - bw / 2, y0 + 70 + (200 - fs) * 0.4), big, font=fb, fill=YEL + (int(255 * a),))
-        fl = font("s", 52); ls = wrap(d, s["texto"], fl, W - 220)
-        for j, l in enumerate(ls[:3]):
-            lw = d.textlength(l, font=fl); d.text((W / 2 - lw / 2, y0 + 330 + j * 68), l, font=fl, fill=WHITE + (int(255 * a),))
+        lay = x["layout"]; d = ImageDraw.Draw(f, "RGBA"); a = ease(k / 0.35); off = sd * 180 * (1 - ease(k / 0.45))
+        if lay == "arriba":
+            guide(f, [(POSE[s.get("pose", 1)], 1)], W / 2 + 40 * sd, 1590, 930, tt, k, seed=seed)
+            d = ImageDraw.Draw(f, "RGBA"); X0, X1, Y0, Y1 = 70 + off, W - 70 + off, 250, 820
+        else:
+            guide(f, [(POSE[s.get("pose", 1)], 1)], (790 if sd > 0 else 290), 1640, 1250, tt, k, seed=seed)
+            d = ImageDraw.Draw(f, "RGBA"); X0, X1, Y0, Y1 = (60 if sd > 0 else 380) + off, (700 if sd > 0 else 1020) + off, 260, 900
+        rr(d, [X0, Y0, X1, Y1], 48, fill=SURF + (int(238 * a),), outline=LINE + (int(255 * a),), width=3)
+        cxx = (X0 + X1) / 2; fs = card_big(d, s, cxx, Y0 + 60, X1 - X0 - 90, k, a)
+        fl = F("s", 50 if lay == "arriba" else 44); ls = wrap(d, s["texto"], fl, X1 - X0 - 100); ta = ease((k - 0.25) / 0.4)
+        for j, l in enumerate(ls[:4]):
+            lw = d.textlength(l, font=fl); d.text((cxx - lw / 2, Y0 + 90 + fs + j * 60 + 20 * (1 - ta)), l, font=fl, fill=WHITE + (int(255 * ta),))
     elif ty == "linea":
-        paste_guide(f, POSE[1], W / 2 + 40, 1580, 820, tt)
-        d = ImageDraw.Draw(f, "RGBA"); rr(d, [60, 260, W - 60, 900], 48, fill=SURF + (238,), outline=LINE, width=3)
+        guide(f, [(POSE[1], 1)], (780 if sd > 0 else 300), 1600, 900, tt, k, seed=seed)
+        d = ImageDraw.Draw(f, "RGBA"); a = ease(k / 0.35); rr(d, [60, 260, W - 60, 900], 48, fill=SURF + (int(238 * a),), outline=LINE, width=3)
         x0, x1, y = 140, W - 140, 560
         d.line([(x0, y), (x1, y)], fill=LINE, width=14)
-        g = ease(p / 0.45); mid = x0 + (x1 - x0) * 0.55
-        reset = ease((p - 0.5) / 0.35)
-        if reset <= 0:
-            d.line([(x0, y), (x0 + (x1 - x0) * g * 0.55, y)], fill=MINT, width=14)
+        g = ease(p / 0.45); mid = x0 + (x1 - x0) * 0.55; reset = ease((p - 0.5) / 0.35)
+        if reset <= 0: d.line([(x0, y), (x0 + (x1 - x0) * g * 0.55, y)], fill=MINT, width=14)
         else:
-            d.line([(x0, y), (mid, y)], fill=(90, 120, 128), width=14)
-            d.line([(mid, y), (mid + (x1 - mid) * reset, y)], fill=MINT, width=14)
-        fl, fs_ = font("s", 40), font("r", 34)
+            d.line([(x0, y), (mid, y)], fill=(90, 120, 128), width=14); d.line([(mid, y), (mid + (x1 - mid) * reset, y)], fill=MINT, width=14)
+        fl = F("s", 40)
         d.ellipse([x0 - 22, y - 22, x0 + 22, y + 22], fill=MINT); d.text((x0 - 40, y + 44), "Infracción", font=fl, fill=WHITE)
-        d.text((x1 - 150, y - 110), "3 años", font=font("b", 58), fill=YEL)
+        d.text((x1 - 150, y - 110), "3 años", font=F("b", 58 * (pop(k - 0.3) if k > 0.3 else 1)), fill=YEL)
         if p > 0.38:
-            a2 = ease((p - 0.38) / 0.12)
-            d.ellipse([mid - 26, y - 26, mid + 26, y + 26], fill=YEL + (int(255 * a2),))
+            a2 = ease((p - 0.38) / 0.12); r_ = 26 * (1 + 0.6 * math.exp(-(p - 0.38) * 25))
+            d.ellipse([mid - r_, y - r_, mid + r_, y + r_], fill=YEL + (int(255 * a2),))
             for j, l in enumerate(["Mandamiento", "de pago", "notificado"]):
                 lw = d.textlength(l, font=fl); d.text((mid - lw / 2, y + 44 + j * 50), l, font=fl, fill=YEL + (int(255 * a2),))
-        if reset > 0:
-            d.text((W / 2 - 220, 800), "↻ el conteo vuelve a empezar", font=fs_, fill=MINT + (int(255 * min(reset * 2, 1)),))
-        d.text((140, 320), "Prescripción", font=font("b", 62), fill=WHITE)
+        if reset > 0: d.text((W / 2 - 220, 800), "↻ el conteo vuelve a empezar", font=F("r", 34), fill=MINT + (int(255 * min(reset * 2, 1)),))
+        d.text((140, 320), "Prescripción", font=F("b", 62), fill=WHITE)
     elif ty == "cierre":
-        paste_guide(f, POSE[2], W / 2 + 60, 1560, 1000, tt)
-        a = ease(k / 0.6); lg = LOGO.resize((int(LOGO.width * 1.9), int(LOGO.height * 1.9)), Image.LANCZOS)
-        d = ImageDraw.Draw(f, "RGBA"); rr(d, [W / 2 - 360, 250, W / 2 + 360, 250 + lg.height + 40], 40, fill=PET + (int(225 * a),))
-        f.paste(lg.convert("RGB"), (int(W / 2 - lg.width / 2), 270), lg.getchannel("A").point(lambda v: int(v * a)))
+        guide(f, [(POSE[2], 1)], W / 2 + 60, 1560, 1000, tt, k, slide=1, seed=seed)
+        a = ease(k / 0.6); lg = LOGO.resize((int(LOGO.width * 1.9 * pop(k)), int(LOGO.height * 1.9 * pop(k))), Image.BILINEAR)
+        d = ImageDraw.Draw(f, "RGBA"); rr(d, [W / 2 - 360, 250, W / 2 + 360, 250 + int(LOGO.height * 1.9) + 40], 40, fill=PET + (int(225 * a),))
+        f.paste(lg.convert("RGB"), (int(W / 2 - lg.width / 2), 270 + int((LOGO.height * 1.9 - lg.height) / 2)), lg.getchannel("A").point(lambda v: int(v * a)))
     d = ImageDraw.Draw(f, "RGBA")
     if s.get("chip") and ty != "cierre": chip(d, s["chip"], min(ease(k / 0.35), 1 - ease((tt - x["b"] + 0.25) / 0.25)))
     return f
@@ -140,12 +224,18 @@ def zoom(img, z, cy=0.45):
     w, h = int(W / z), int(H / z); x = (W - w) // 2; y = int((H - h) * cy)
     return img.crop((x, y, x + w, y + h)).resize((W, H), Image.BILINEAR)
 
+def cam(x, tt):
+    p = (tt - x["a"]) / (x["b"] - x["a"]); return 1 + 0.045 * (p if x["cam"] == "in" else 1 - p)
+
 XF = 0.2
 def frame(tt):
     i = next(j for j, x in enumerate(TL) if tt < x["b"] or j == len(TL) - 1); x = TL[i]; k = tt - x["a"]
-    p = k / (x["b"] - x["a"])
-    f = zoom(draw_seg(x, tt), 1 + 0.03 * p + (0.07 * (1 - ease(k / 0.35)) if i else 0))
-    if i and k < XF: f = Image.blend(zoom(draw_seg(TL[i - 1], tt), 1.03 + 0.04 * ease(k / XF)), f, ease(k / XF))
+    f = zoom(draw_seg(x, tt), cam(x, tt) + (0.07 * (1 - ease(k / 0.35)) if i and x["trans"] == "punch" else 0))
+    if i and x["trans"] == "punch" and k < XF:
+        f = Image.blend(zoom(draw_seg(TL[i - 1], tt), cam(TL[i - 1], TL[i - 1]["b"]) + 0.04 * ease(k / XF)), f, ease(k / XF))
+    elif i and x["trans"] == "barrido" and k < 0.3:
+        e = ease(k / 0.3); prev = zoom(draw_seg(TL[i - 1], tt), cam(TL[i - 1], TL[i - 1]["b"])); c = Image.new("RGB", (W, H))
+        c.paste(prev, (int(-W * e), 0)); c.paste(f, (int(W * (1 - e)), 0)); f = c
     d = ImageDraw.Draw(f, "RGBA")
     if x["seg"]["tipo"] == "cierre":
         a = ease((tt - x["vstart"]) / 0.5); fnt = font("b", 92); s = "lamulta.com.co"; tw = d.textlength(s, font=fnt)
