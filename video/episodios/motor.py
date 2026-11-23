@@ -195,13 +195,13 @@ def music(path, sr=48000):
         w.setnchannels(2); w.setsampwidth(2); w.setframerate(sr); w.writeframes((st * 32767).astype("<i2").tobytes())
 
 def voice(path):
-    fl = []
+    fl = [f"[0:a]asplit={len(TL)}" + "".join(f"[s{k}]" for k in range(len(TL)))]
     for k, x in enumerate(TL):
         a = x["va"] - (0.06 if k else 0); b = x["vb"] + 0.12
-        fl.append(f"[0:a]atrim={max(a, 0):.3f}:{b:.3f},asetpts=PTS-STARTPTS,afade=t=out:st={b - a - 0.05:.3f}:d=0.05,aresample=48000,adelay={int(x['vstart'] * 1000)}:all=1[v{k}]")
-    fl.append("".join(f"[v{k}]" for k in range(len(TL))) + f"amix=inputs={len(TL)}:normalize=0,pan=stereo|c0=c0|c1=c0,apad,atrim=0:{NDUR}[o]")
+        fl.append(f"[s{k}]atrim={max(a, 0):.3f}:{b:.3f},asetpts=PTS-STARTPTS,afade=t=out:st={b - a - 0.05:.3f}:d=0.05,aresample=48000,adelay={int(x['vstart'] * 1000)}:all=1[v{k}]")
+    fl.append("".join(f"[v{k}]" for k in range(len(TL))) + f"amix=inputs={len(TL)}:normalize=0:duration=longest,pan=stereo|c0=c0|c1=c0,apad[o]")
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(mp3), "-filter_complex", ";".join(fl),
-                    "-map", "[o]", "-ar", "48000", str(path)], check=True)
+                    "-map", "[o]", "-t", f"{NDUR}", "-ar", "48000", str(path)], check=True, timeout=120)
 
 def srt(path):
     fm = lambda x: f"{int(x // 3600):02d}:{int(x // 60 % 60):02d}:{int(x % 60):02d},{int(round(x * 1000)) % 1000:03d}"
