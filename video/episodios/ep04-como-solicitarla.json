@@ -1,16 +1,47 @@
 {
   "titulo": "Cómo solicitar la prescripción",
   "segmentos": [
-    {"tipo": "guia", "pose": 0, "chip": "Cómo solicitar la prescripción",
-     "voz": "Si tu multa podría estar prescrita, así puedes solicitarlo."},
-    {"tipo": "tarjeta", "grande": "Paso 1", "texto": "escribe un derecho de petición al organismo de tránsito que impuso la multa", "pose": 1,
-     "voz": "Presenta un derecho de petición ante el organismo de tránsito que impuso la multa."},
-    {"tipo": "tarjeta", "grande": "Paso 2", "texto": "incluye tus datos, la multa y las fechas", "pose": 1,
-     "voz": "Incluye tus datos, el número de la multa, las fechas y pide que se declare la prescripción."},
-    {"tipo": "tarjeta", "grande": "15 días hábiles", "texto": "plazo general para responder un derecho de petición", "pose": 2,
-     "voz": "Guarda el número de radicado. La entidad tiene, por regla general, quince días hábiles para responder."},
-    {"tipo": "carpeta", "chip": "Escrito revisado por un abogado",
-     "voz": "En LaMulta preparamos tu escrito con tus datos, y un abogado lo revisa antes de entregártelo. Luego puedes hacer el seguimiento en Mi expediente."},
-    {"tipo": "cierre", "voz": "Empieza en lamulta punto com punto co."}
+    {
+      "tipo": "guia",
+      "pose": 0,
+      "chip": "Cómo solicitar la prescripción",
+      "voz": "Si tu multa podría estar prescrita, así puedes solicitarlo."
+    },
+    {
+      "tipo": "tarjeta",
+      "grande": "Paso 1",
+      "texto": "escribe un derecho de petición al organismo de tránsito que impuso la multa",
+      "voz": "Presenta un derecho de petición ante el organismo de tránsito que impuso la multa.",
+      "acciones": [
+        "senalando"
+      ]
+    },
+    {
+      "tipo": "tarjeta",
+      "grande": "Paso 2",
+      "texto": "incluye tus datos, la multa y las fechas",
+      "voz": "Incluye tus datos, el número de la multa, las fechas y pide que se declare la prescripción.",
+      "acciones": [
+        "hoja"
+      ]
+    },
+    {
+      "tipo": "tarjeta",
+      "grande": "15 días hábiles",
+      "texto": "plazo general para responder un derecho de petición",
+      "voz": "Guarda el número de radicado. La entidad tiene, por regla general, quince días hábiles para responder.",
+      "acciones": [
+        "celular"
+      ]
+    },
+    {
+      "tipo": "carpeta",
+      "chip": "Escrito revisado por un abogado",
+      "voz": "En LaMulta preparamos tu escrito con tus datos, y un abogado lo revisa antes de entregártelo. Luego puedes hacer el seguimiento en Mi expediente."
+    },
+    {
+      "tipo": "cierre",
+      "voz": "Empieza en lamulta punto com punto co."
+    }
   ]
 }

@@ -1,16 +1,49 @@
 {
   "titulo": "¿Mi multa podría estar prescrita?",
   "segmentos": [
-    {"tipo": "guia", "pose": 0, "chip": "¿Mi multa ya prescribió?",
-     "voz": "¿Cómo saber si tu multa podría estar prescrita? Necesitas mirar dos fechas."},
-    {"tipo": "tarjeta", "grande": "Fecha 1", "texto": "el día de la infracción o del comparendo", "pose": 1,
-     "voz": "La primera es la fecha de la infracción. Desde ahí empiezan a contar los tres años."},
-    {"tipo": "tarjeta", "grande": "Fecha 2", "texto": "la notificación del mandamiento de pago, si existe", "pose": 1,
-     "voz": "La segunda es la fecha en que te notificaron el mandamiento de pago, si es que existe."},
-    {"tipo": "carpeta", "chip": "Pide tu expediente",
-     "voz": "El SIMIT muestra tus multas, pero no siempre las notificaciones. Si tienes dudas, puedes pedir copia del expediente al organismo de tránsito."},
-    {"tipo": "lupa", "chip": "Revisión gratis de tus fechas",
-     "voz": "En LaMulta consultamos tus multas gratis y la IA revisa las fechas disponibles para orientarte."},
-    {"tipo": "cierre", "voz": "Entra a lamulta punto com punto co."}
+    {
+      "tipo": "guia",
+      "chip": "¿Mi multa ya prescribió?",
+      "voz": "¿Cómo saber si tu multa podría estar prescrita? Necesitas mirar dos fechas.",
+      "acciones": [
+        "bienvenida-izq",
+        "dos-dedos"
+      ]
+    },
+    {
+      "tipo": "tarjeta",
+      "grande": "Fecha 1",
+      "texto": "el día de la infracción o del comparendo",
+      "voz": "La primera es la fecha de la infracción. Desde ahí empiezan a contar los tres años.",
+      "acciones": [
+        "senalando"
+      ]
+    },
+    {
+      "tipo": "tarjeta",
+      "grande": "Fecha 2",
+      "texto": "la notificación del mandamiento de pago, si existe",
+      "voz": "La segunda es la fecha en que te notificaron el mandamiento de pago, si es que existe.",
+      "acciones": [
+        "carta"
+      ]
+    },
+    {
+      "tipo": "carpeta",
+      "chip": "Pide tu expediente",
+      "voz": "El SIMIT muestra tus multas, pero no siempre las notificaciones. Si tienes dudas, puedes pedir copia del expediente al organismo de tránsito.",
+      "acciones": [
+        "celular"
+      ]
+    },
+    {
+      "tipo": "lupa",
+      "chip": "Revisión gratis de tus fechas",
+      "voz": "En LaMulta consultamos tus multas gratis y la IA revisa las fechas disponibles para orientarte."
+    },
+    {
+      "tipo": "cierre",
+      "voz": "Entra a lamulta punto com punto co."
+    }
   ]
 }

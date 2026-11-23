@@ -123,6 +123,8 @@ for i_, x_ in enumerate(TL):
         x_["shot"] = RNG.choice([("medio", W / 2, 1580, 1200), ("primer", W / 2, 1900, 1650)])
     x_["layout"] = RNG.choice(["arriba", "lado"]) if ty_ == "tarjeta" else None
     x_["side"] = RNG.choice([-1, 1]); x_["cam"] = RNG.choice(["in", "out"]); x_["trans"] = RNG.choice(["punch", "barrido"]) if i_ else None
+for x_ in TL:  # si señala, la tarjeta va del lado al que apunta (derecha)
+    if "senalando" in (x_["seg"].get("acciones") or []) and x_["layout"] == "lado": x_["side"] = -1
 for i_ in range(1, len(TL)):  # evita dos tarjetas seguidas con el mismo diseño
     if TL[i_]["layout"] and TL[i_]["layout"] == TL[i_ - 1].get("layout"): TL[i_]["layout"] = "lado" if TL[i_]["layout"] == "arriba" else "arriba"
 
@@ -146,11 +148,21 @@ def guide(f, ims, cx, bottom, height, tt, k=9.0, slide=0, seed=0.0, talk=True):
         m = g.getchannel("A") if wgt >= 0.99 else g.getchannel("A").point(lambda v, w_=wgt: int(v * w_))
         f.paste(g, (int(cx - g.width / 2 + dx), int(bottom - g.height + dy)), m)
 
-def gesture(x, tt, base=0):
-    n = sum(1 for b in x["beats"] if b < tt); prev = [b for b in x["beats"] if b < tt]
-    a = ease((tt - prev[-1]) / 0.14) if prev else 1.0
-    cur, old = POSE[[0, 2][(base + n) % 2]], POSE[[0, 2][(base + n - 1) % 2]]
-    return [(old, 1 - a), (cur, a)] if a < 1 else [(cur, 1.0)]
+ACC = {"bienvenida-izq": POSE[0], "hoja": POSE[1], "bienvenida-der": POSE[2]}
+for f_ in sorted((HERE / "poses").glob("guia-*.png")): ACC[f_.stem[5:]] = Image.open(f_).convert("RGBA")
+LEGACY = {0: "bienvenida-izq", 1: "hoja", 2: "bienvenida-der"}
+
+def gesture(x, tt, default=("bienvenida-izq", "bienvenida-der")):
+    """Elige la acción según las pausas de la frase. 'acciones' avanza en orden y se queda en la última;
+    sin 'acciones', alterna los gestos de bienvenida."""
+    s = x["seg"]; lst = s.get("acciones")
+    if not lst and "pose" in s and s["tipo"] != "guia": lst = [LEGACY[s["pose"]]]
+    cyc = not lst; lst = list(lst or default)
+    prev = [b for b in x["beats"] if b < tt]; n = len(prev)
+    pick = (lambda j: lst[j % len(lst)]) if cyc else (lambda j: lst[min(max(j, 0), len(lst) - 1)])
+    cur, old = ACC[pick(n)], ACC[pick(n - 1)]
+    a = ease((tt - prev[-1]) / 0.18) if prev else 1.0
+    return [(old, 1 - a), (cur, a)] if (a < 1 and old is not cur) else [(cur, 1.0)]
 
 def anim_frames(fr, tt, fps=5.0):
     seq = [0, 1, 2, 3, 2, 1]; u = tt * fps; i0 = int(u) % 6; a = ease((u - int(u) - 0.8) / 0.2)
@@ -170,21 +182,22 @@ def draw_seg(x, tt):
     first = x is TL[0]
     if ty == "guia":
         _, cx, bt, hh = x["shot"]
-        guide(f, gesture(x, tt, s.get("pose", 0) // 2), cx, bt, hh, tt, k, slide=sd if first else 0, seed=seed)
+        guide(f, gesture(x, tt), cx, bt, hh, tt, k, slide=sd if first else 0, seed=seed)
         if first and 0.5 < k < 4.2:
             a = min(ease((k - 0.5) / 0.4), 1 - ease((k - 3.8) / 0.4)); d = ImageDraw.Draw(f, "RGBA"); tx_ = "Tu guía digital · LaMulta"; fn = F("s", 38)
             tw = d.textlength(tx_, font=fn); x0 = 60 - 40 * (1 - a)
             rr(d, [x0, 1440, x0 + tw + 70, 1516], 38, fill=YEL + (int(240 * a),)); d.text((x0 + 35, 1458), tx_, font=fn, fill=PET + (int(255 * a),))
     elif ty in ("lupa", "carpeta"):
         _, cx, bt, hh = x["shot"]
-        guide(f, anim_frames(LUPA if ty == "lupa" else CARP, tt), cx, bt, hh, tt, k, seed=seed, talk=False)
+        if s.get("acciones"): guide(f, gesture(x, tt), cx, bt, hh, tt, k, seed=seed)
+        else: guide(f, anim_frames(LUPA if ty == "lupa" else CARP, tt), cx, bt, hh, tt, k, seed=seed, talk=False)
     elif ty == "tarjeta":
         lay = x["layout"]; d = ImageDraw.Draw(f, "RGBA"); a = ease(k / 0.35); off = sd * 180 * (1 - ease(k / 0.45))
         if lay == "arriba":
-            guide(f, [(POSE[s.get("pose", 1)], 1)], W / 2 + 40 * sd, 1590, 930, tt, k, seed=seed)
+            guide(f, gesture(x, tt, ("hoja",)), W / 2 + 40 * sd, 1590, 930, tt, k, seed=seed)
             d = ImageDraw.Draw(f, "RGBA"); X0, X1, Y0, Y1 = 70 + off, W - 70 + off, 250, 820
         else:
-            guide(f, [(POSE[s.get("pose", 1)], 1)], (790 if sd > 0 else 290), 1640, 1250, tt, k, seed=seed)
+            guide(f, gesture(x, tt, ("hoja",)), (790 if sd > 0 else 290), 1640, 1250, tt, k, seed=seed)
             d = ImageDraw.Draw(f, "RGBA"); X0, X1, Y0, Y1 = (60 if sd > 0 else 380) + off, (700 if sd > 0 else 1020) + off, 260, 900
         rr(d, [X0, Y0, X1, Y1], 48, fill=SURF + (int(238 * a),), outline=LINE + (int(255 * a),), width=3)
         cxx = (X0 + X1) / 2; fs = card_big(d, s, cxx, Y0 + 60, X1 - X0 - 90, k, a)
@@ -192,7 +205,7 @@ def draw_seg(x, tt):
         for j, l in enumerate(ls[:4]):
             lw = d.textlength(l, font=fl); d.text((cxx - lw / 2, Y0 + 90 + fs + j * 60 + 20 * (1 - ta)), l, font=fl, fill=WHITE + (int(255 * ta),))
     elif ty == "linea":
-        guide(f, [(POSE[1], 1)], (780 if sd > 0 else 300), 1600, 900, tt, k, seed=seed)
+        guide(f, gesture(x, tt, ("hoja",)), (780 if sd > 0 else 300), 1600, 900, tt, k, seed=seed)
         d = ImageDraw.Draw(f, "RGBA"); a = ease(k / 0.35); rr(d, [60, 260, W - 60, 900], 48, fill=SURF + (int(238 * a),), outline=LINE, width=3)
         x0, x1, y = 140, W - 140, 560
         d.line([(x0, y), (x1, y)], fill=LINE, width=14)
@@ -211,7 +224,7 @@ def draw_seg(x, tt):
         if reset > 0: d.text((W / 2 - 220, 800), "↻ el conteo vuelve a empezar", font=F("r", 34), fill=MINT + (int(255 * min(reset * 2, 1)),))
         d.text((140, 320), "Prescripción", font=F("b", 62), fill=WHITE)
     elif ty == "cierre":
-        guide(f, [(POSE[2], 1)], W / 2 + 60, 1560, 1000, tt, k, slide=1, seed=seed)
+        guide(f, gesture(x, tt, ("bienvenida-der",)), W / 2 + 60, 1560, 1000, tt, k, slide=1, seed=seed)
         a = ease(k / 0.6); lg = LOGO.resize((int(LOGO.width * 1.9 * pop(k)), int(LOGO.height * 1.9 * pop(k))), Image.BILINEAR)
         d = ImageDraw.Draw(f, "RGBA"); rr(d, [W / 2 - 360, 250, W / 2 + 360, 250 + int(LOGO.height * 1.9) + 40], 40, fill=PET + (int(225 * a),))
         f.paste(lg.convert("RGB"), (int(W / 2 - lg.width / 2), 270 + int((LOGO.height * 1.9 - lg.height) / 2)), lg.getchannel("A").point(lambda v: int(v * a)))

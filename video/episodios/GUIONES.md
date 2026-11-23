@@ -71,6 +71,19 @@ Videos verticales de 40–48 s con la guía (voz «Lina», ElevenLabs) que expli
 | 5 | Guía con lupa | Revisión gratis de tus fechas | En LaMulta revisamos gratis tus multas y te explicamos qué puedes hacer en tu caso. |
 | 6 | Logo y dominio | logo + lamulta.com.co | Entra a lamulta punto com punto co. |
 
+## Acciones del personaje
+
+Además de las 3 poses y las animaciones de lupa y carpeta del paquete original, hay 4 acciones nuevas generadas con IA en Canva a partir de la lámina de la guía (misma cara y vestuario), recortadas con `recortar.py`:
+
+| Acción | Archivo | Uso en la serie |
+|---|---|---|
+| Leyendo una carta | `poses/guia-carta.png` | Mandamiento de pago, fecha de notificación, mito del acuerdo de pago |
+| Señalando a un lado | `poses/guia-senalando.png` | Presenta tarjetas (cobro coactivo, fecha 1, paso 1, mito 1) |
+| Mostrando dos dedos | `poses/guia-dos-dedos.png` | «Necesitas mirar dos fechas» |
+| Mirando el celular | `poses/guia-celular.png` | Consulta en el SIMIT, radicado, mito del SIMIT |
+
+En cada segmento del JSON, `"acciones": [...]` lista las acciones en orden; la guía cambia a la siguiente en cada pausa de la frase. Nombres disponibles: `bienvenida-izq`, `bienvenida-der`, `hoja`, `carta`, `senalando`, `dos-dedos`, `celular`.
+
 ## Cómo producir un episodio
 
 ```
