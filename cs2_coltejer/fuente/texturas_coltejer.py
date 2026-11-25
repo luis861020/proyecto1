@@ -1,8 +1,8 @@
 """Atlas de texturas del Edificio Coltejer (4096 x 4096): BaseColor, Normal, MaskMap, Emissive.
 Uso: python texturas_coltejer.py <carpeta_salida> <nombre_malla>
 Disposición (también la usa modelo_coltejer.py):
-  y 0-1023     8 franjas de vidrio de la fachada larga (45 m, 30 vanos), 128 px cada una
-  y 1024-2047  8 franjas de vidrio de la fachada corta (20 m, 13 vanos)
+  y 0-1023     8 franjas de vidrio de las fachadas frontal/trasera (32 m, 20 vanos), 128 px cada una
+  y 1024-2047  8 franjas de vidrio de las fachadas laterales (37 m, 23 vanos)
   y 2048-3071  aletas | antepechos, aguja, cubierta, pavimento
   y 3072-4095  local comercial, ventana del podio, granito, metal / césped / luz roja"""
 import sys, numpy as np
@@ -62,8 +62,8 @@ def glass_strip(y0, w_m, bays, variant):
     col[y0:y0 + 6, :] = hexc('#2b2d30'); col[y0 + H - 5:y0 + H, :] = hexc('#2b2d30')
     emi[y0:y0 + H] *= (col[y0:y0 + H].mean(axis=2, keepdims=True) > 0) * 1.0
 
-for v in range(8): glass_strip(v * 128, 45, 30, v)
-for v in range(8): glass_strip(1024 + v * 128, 20, 13, v)
+for v in range(8): glass_strip(v * 128, 32, 20, v)          # fachadas frontal y trasera
+for v in range(8): glass_strip(1024 + v * 128, 37, 23, v)   # fachadas laterales
 
 C = 1024
 CONC = '#c9c4ba'

@@ -1,8 +1,8 @@
 """Edificio Coltejer (Medellín) para Cities: Skylines II: modelo y exportación FBX con 3 LOD.
 Uso: python modelo_coltejer.py <carpeta> <nombre> [prefijo_render]
-Metros, origen en el centro de la parcela de 8 x 6 celdas (64 x 48 m). La calle queda en -Y (Blender).
-Medidas: 175 m de altura total y 36 plantas son datos publicados. La planta (45 x 20 m), el reparto
-de alturas, la aguja y el podio son una interpretación aproximada."""
+Metros, origen en el centro de la parcela de 6 x 6 celdas (48 x 48 m). La fachada principal mira a -Y (Blender).
+175 m y 36 plantas son datos publicados. La forma (fuste, ensanche de la base y remate cóncavo con ojo)
+y la huella (42,7 x 47,6 m) salen de una captura de un modelo 3D de referencia (301,1 mm = 175 m)."""
 import sys, math, bpy, bmesh, mathutils
 
 OUT, NAME = sys.argv[1], sys.argv[2]
@@ -44,71 +44,84 @@ class Mesh:
         me = bpy.data.meshes.new(name); s.bm.normal_update(); s.bm.to_mesh(me); s.bm.free(); me.materials.append(mat)
         o = bpy.data.objects.new(name, me); bpy.context.collection.objects.link(o); return o
 
-# ---------- dimensiones ----------
-TW, TD = 45.0, 20.0                       # planta de la torre
-TX0, TX1, TY0, TY1 = -TW / 2, TW / 2, 2.0, 22.0
-PH = 10.0                                 # podio: 2 plantas de 5 m
-FH, NFT = 3.75, 34                        # plantas de la torre (2 + 34 = 36)
-H0 = PH + FH * NFT                        # 137,5 m: azotea de la torre
-NB, APEX = H0 + 1.8, 175.0                # arranque y punta de la aguja
-ND = 12.0                                 # espesor de la aguja
-PX0, PX1, PY0, PY1 = -30.0, 30.0, -22.0, 22.0
-SPH, FIN_D, FIN_W, SP_D = 1.0, .7, .3, .25
+# ---------- dimensiones (escala de la referencia: 301,1 mm = 175 m -> 0,581 m/mm) ----------
+BX, BY = 42.7, 47.6                       # huella en la base (73,4 x 81,9 mm)
+SX, SY = 32.0, 37.0                       # fuste de la torre
+X0, X1, Y0, Y1 = -SX / 2, SX / 2, -SY / 2, SY / 2
+GH, FT = 6.0, 26.0                        # planta baja y fin del ensanche curvo
+FH, NFT = 3.84, 31                        # 31 plantas tipo (+ 5 en la base = 36)
+HC0, HC1 = FT + FH * NFT, 175.0           # arranque del remate (145 m) y punta
+TC = .55                                  # parte del remate sin ojo / con ojo
+FIN_D, FIN_W, SP_D, SPH = .7, .3, .25, 1.0
+curve = lambda t: HC0 + (HC1 - HC0) * t * t       # perfil cóncavo del remate, de la fachada (t=0) a la trasera (t=1)
+yat = lambda t: Y0 + SY * t
 
 def sides_of(x0, y0, x1, y1):
-    """(esquina izquierda vista desde fuera, dirección, normal exterior, ancho) para las 4 caras."""
     return [((x0, y0), (1, 0), (0, -1), x1 - x0), ((x1, y0), (0, 1), (1, 0), y1 - y0),
             ((x1, y1), (-1, 0), (0, 1), x1 - x0), ((x0, y1), (0, -1), (-1, 0), y1 - y0)]
 
-def tower(m, lod):
-    for si, ((px, py), (ux, uy), (nx, ny), w) in enumerate(sides_of(TX0, TY0, TX1, TY1)):
-        strips = LONG if si % 2 == 0 else SHORT
-        bays = 30 if si % 2 == 0 else 13
+def base(m, lod):
+    """Planta baja vertical + ensanche cóncavo que se estrecha hasta el fuste."""
+    bx0, by0 = -BX / 2, -BY / 2
+    for si, ((px, py), (ux, uy), _, w) in enumerate(sides_of(bx0, by0, -bx0, -by0)):
+        nb = 1 if lod == 2 else max(1, round(w / 6))
+        bw = w / nb
+        for i in range(nb):
+            m.quad((px + ux * i * bw, py + uy * i * bw, 0), (ux * bw, uy * bw, 0), (0, 0, GH), SHOP if (i + si) % 4 else GRAN)
+    n = [10, 5, 1][lod]
+    rings = []
+    for k in range(n + 1):
+        s = k / n; o = (1 - s) ** 2
+        hx, hy = SX / 2 + (BX - SX) / 2 * o, SY / 2 + (BY - SY) / 2 * o
+        rings.append([(-hx, -hy, GH + (FT - GH) * s), (hx, -hy, GH + (FT - GH) * s), (hx, hy, GH + (FT - GH) * s), (-hx, hy, GH + (FT - GH) * s)])
+    for k in range(n):
+        lo, hi = rings[k], rings[k + 1]
+        for j in range(4):
+            a, b = lo[j], lo[(j + 1) % 4]; c, d = hi[(j + 1) % 4], hi[j]
+            v0 = FIN[1] + (FIN[3] - FIN[1]) * k / n; v1 = FIN[1] + (FIN[3] - FIN[1]) * (k + 1) / n
+            out = [(0, -1, .3), (1, 0, .3), (0, 1, .3), (-1, 0, .3)][j]
+            m.face([a, b, c, d], [(FIN[0], v0), (FIN[2], v0), (FIN[2], v1), (FIN[0], v1)], out)
+    if lod == 0:  # marquesinas de acceso en los laterales (en el frente no cabe: la base llega al borde de la parcela)
+        for x, sg in ((-BX / 2, -1), (BX / 2, 1)):
+            m.box((x, -5, 4.6), (x + sg * 2.2, 5, 5.0), METAL, bottom=True)
+
+def shaft(m, lod):
+    for si, ((px, py), (ux, uy), (nx, ny), w) in enumerate(sides_of(X0, Y0, X1, Y1)):
+        side = si % 2 == 1
+        strips, bays = (SHORT, 23) if side else (LONG, 20)
         if lod == 2:
-            m.quad((px, py, PH), (ux * w, uy * w, 0), (0, 0, H0 - PH), strips[0]); continue
-        for f in range(NFT):
-            z = PH + f * FH
-            m.quad((px, py, z + SPH), (ux * w, uy * w, 0), (0, 0, FH - SPH), strips[(f * 5 + si * 3) % 8])
-            if lod == 0:  # antepecho saliente
-                a = (px + nx * SP_D, py + ny * SP_D, z); b = (px + ux * w + nx * SP_D, py + uy * w + ny * SP_D, z + SPH)
-                m.quad(a, (ux * w, uy * w, 0), (0, 0, SPH), SPAND)
-                m.quad((a[0], a[1], z + SPH), (ux * w, uy * w, 0), (-nx * SP_D, -ny * SP_D, 0), SPAND)
-            else:
-                m.quad((px, py, z), (ux * w, uy * w, 0), (0, 0, SPH), SPAND)
-        if lod == 0:  # aletas verticales continuas: el rasgo principal de la fachada
+            m.quad((px, py, FT), (ux * w, uy * w, 0), (0, 0, HC0 - FT), strips[0])
+        else:
+            for f in range(NFT):
+                z = FT + f * FH
+                m.quad((px, py, z + SPH), (ux * w, uy * w, 0), (0, 0, FH - SPH), strips[(f * 5 + si * 3) % 8])
+                if lod == 0:
+                    a = (px + nx * SP_D, py + ny * SP_D, z)
+                    m.quad(a, (ux * w, uy * w, 0), (0, 0, SPH), SPAND)
+                    m.quad((a[0], a[1], z + SPH), (ux * w, uy * w, 0), (-nx * SP_D, -ny * SP_D, 0), SPAND)
+                else:
+                    m.quad((px, py, z), (ux * w, uy * w, 0), (0, 0, SPH), SPAND)
+        if lod == 0:  # estrías verticales continuas; en los laterales suben siguiendo la curva del remate
             for i in range(1, bays):
-                t = w * i / bays
-                cx, cy = px + ux * t, py + uy * t
-                a = (cx - ux * FIN_W / 2, cy - uy * FIN_W / 2, PH)
-                b = (cx + ux * FIN_W / 2 + nx * FIN_D, cy + uy * FIN_W / 2 + ny * FIN_D, H0 + .6)
+                t = i / bays; cx, cy = px + ux * w * t, py + uy * w * t
+                if si == 0: top = HC0 + .8
+                elif si == 2: top = HC1
+                else:
+                    tt = (cy - Y0) / SY; top = curve(tt) - .1
+                    if .86 < tt < .975: top = HC0   # deja libre el ojo
+                a = (cx - ux * FIN_W / 2, cy - uy * FIN_W / 2, FT)
+                b = (cx + ux * FIN_W / 2 + nx * FIN_D, cy + uy * FIN_W / 2 + ny * FIN_D, top)
                 m.box(a, b, FIN)
-    # pilares de esquina
     if lod < 2:
-        for cx, cy in [(TX0, TY0), (TX1, TY0), (TX1, TY1), (TX0, TY1)]:
-            m.box((cx - .8, cy - .8, PH), (cx + .8, cy + .8, H0 + 1.8), FIN)
-    # azotea y antepecho de coronación
-    m.quad((TX0, TY0, H0), (TW, 0, 0), (0, TD, 0), ROOF)
-    if lod == 0:
-        t = .4
-        for a, b in [((TX0 - .3, TY0 - .3, H0), (TX1 + .3, TY0 + t, NB)), ((TX0 - .3, TY1 - t, H0), (TX1 + .3, TY1 + .3, NB)),
-                     ((TX0 - .3, TY0, H0), (TX0 + t, TY1, NB)), ((TX1 - t, TY0, H0), (TX1 + .3, TY1, NB))]:
-            m.box(a, b, SPAND)
-        m.box((TX0 + 3, TY0 + 2, H0), (TX0 + 9, TY0 + 6, H0 + 3), METAL)    # cuarto de máquinas
-        m.box((TX1 - 9, TY1 - 6, H0), (TX1 - 3, TY1 - 2, H0 + 3), METAL)
+        for cx, cy, top in [(X0, Y0, HC0 + .8), (X1, Y0, HC0 + .8), (X1, Y1, HC1), (X0, Y1, HC1)]:
+            m.box((cx - .8, cy - .8, FT), (cx + .8, cy + .8, top), FIN)
+        m.box((X0 - .3, Y0 - .35, HC0 - .2), (X1 + .3, Y0 + .3, HC0 + .8), SPAND)    # cornisa frontal
 
-def pointed_arch(s, h, n):
-    """Contorno exterior: base recta + arco apuntado (ojival) de luz s y altura h. Origen en la base."""
-    c = (h * h - (s / 2) ** 2) / s; r = s / 2 + c
-    a1 = math.atan2(h, c)
-    right = [(-c + r * math.cos(a1 * k / n), r * math.sin(a1 * k / n)) for k in range(n + 1)]
-    left = [(-x, z) for x, z in reversed(right)]
-    base = [(s / 2 * (1 - k / 20), 0) for k in range(1, 20)] + [(0, 0)] + [(-s / 2 * k / 20, 0) for k in range(1, 20)]
-    return [(0, 0)] + [(s / 2 * k / 20, 0) for k in range(1, 20)] + right + left[1:] + base[20:]
-
-def vesica(zb, zt, hw, n):
+def vesica(zb, zt, hw, n, yc):
     L, zm = (zt - zb) / 2, (zt + zb) / 2; Rr = (L * L + hw * hw) / (2 * hw); f0 = math.asin(L / Rr); cx = hw - Rr
     right = [(cx + Rr * math.cos(-f0 + 2 * f0 * k / n), zm + Rr * math.sin(-f0 + 2 * f0 * k / n)) for k in range(n + 1)]
-    return right + [(-x, z) for x, z in reversed(right[1:-1])]
+    pts = right + [(-x, z) for x, z in reversed(right[1:-1])]
+    return [(yc + x, z) for x, z in pts]
 
 def ray_hit(poly, o, d):
     best = None
@@ -120,75 +133,64 @@ def ray_hit(poly, o, d):
         if t > 0 and -1e-9 <= u <= 1 + 1e-9 and (best is None or t < best): best = t
     return (o[0] + d[0] * best, o[1] + d[1] * best)
 
-def needle(m, lod):
-    """La aguja: un arco apuntado macizo de 45 m de luz con un ojo alargado que lo atraviesa."""
-    n = [96, 40, 16][lod]
-    outer = [(x, z + NB) for x, z in pointed_arch(TW, APEX - NB, 60)]
-    eye = vesica(NB + 9.5, APEX - 6.5, 5.2, 40)
-    yc = (TY0 + TY1) / 2; yf, yb = yc - ND / 2, yc + ND / 2
-    o = (0.0, (NB + 9.5 + APEX - 6.5) / 2)
+def crown(m, lod):
+    """Remate en punta de aguja: el techo sube en curva cóncava de la fachada (145 m) a la trasera (175 m).
+    Cerca de la punta, un ojo alargado lo atraviesa de lado a lado."""
+    uvx = lambda y, z: (NEEDLE[0] + (y - Y0) / SY * (NEEDLE[2] - NEEDLE[0]), NEEDLE[1] + (z - HC0) / (HC1 - HC0) * (NEEDLE[3] - NEEDLE[1]))
+    def xfaces(pts):
+        for x, want in ((X0, (-1, 0, 0)), (X1, (1, 0, 0))):
+            q = [(x, y, z) for y, z in pts]
+            if len({(round(a[1], 4), round(a[2], 4)) for a in q}) < 3: continue
+            uniq = []
+            for p in q:
+                if not uniq or (abs(p[1] - uniq[-1][1]) + abs(p[2] - uniq[-1][2])) > 1e-6: uniq.append(p)
+            if len(uniq) > 1 and abs(uniq[0][1] - uniq[-1][1]) + abs(uniq[0][2] - uniq[-1][2]) < 1e-6: uniq.pop()
+            m.face(uniq, [uvx(p[1], p[2]) for p in uniq], want)
+    def roof_strip(y0, z0, y1, z1):
+        u0, u1 = NEEDLE[0], NEEDLE[2]; va, vb = uvx(y0, z0)[1], uvx(y1, z1)[1]
+        m.face([(X0, y0, z0), (X1, y0, z0), (X1, y1, z1), (X0, y1, z1)], [(u0, va), (u1, va), (u1, vb), (u0, vb)], (0, -(z1 - z0), (y1 - y0)))
+    nf = [24, 10, 6][lod]
+    tc = TC if lod < 2 else 1.0
+    for k in range(nf):   # parte delantera, maciza
+        t0, t1 = tc * k / nf, tc * (k + 1) / nf
+        y0, y1, z0, z1 = yat(t0), yat(t1), curve(t0), curve(t1)
+        xfaces([(y0, HC0), (y1, HC0), (y1, z1), (y0, z0)]); roof_strip(y0, z0, y1, z1)
+    if lod == 2:
+        m.quad((X1, Y1, HC0), (-SX, 0, 0), (0, 0, HC1 - HC0), NEEDLE); return
+    # parte trasera con el ojo: anillo entre el contorno exterior y el ojo
+    yc = Y1 - 3.0
+    eye = vesica(HC0 + 4.5, HC0 + 21.5, 1.6, [32, 12][lod], yc)
+    nt = 30
+    outer = [(yat(tc), HC0), (Y1, HC0), (Y1, HC1)] + [(yat(1 - (1 - tc) * k / nt), curve(1 - (1 - tc) * k / nt)) for k in range(1, nt + 1)]
+    o = (yc, HC0 + 13.0); n = [96, 32][lod]
     ang = [-math.pi / 2 + 2 * math.pi * k / n for k in range(n)]
     po = [ray_hit(outer, o, (math.cos(a), math.sin(a))) for a in ang]
     pi = [ray_hit(eye, o, (math.cos(a), math.sin(a))) for a in ang]
-    uvp = lambda x, z: (NEEDLE[0] + (x + TW / 2) / TW * (NEEDLE[2] - NEEDLE[0]), NEEDLE[1] + (z - NB) / (APEX - NB) * (NEEDLE[3] - NEEDLE[1]))
     for k in range(n):
         a, b, c, d = po[k], po[(k + 1) % n], pi[(k + 1) % n], pi[k]
-        for y, want in ((yf, (0, -1, 0)), (yb, (0, 1, 0))):
-            m.face([(a[0], y, a[1]), (b[0], y, b[1]), (c[0], y, c[1]), (d[0], y, d[1])], [uvp(*a), uvp(*b), uvp(*c), uvp(*d)], want)
-        for p, q, sign in ((a, b, 1), (d, c, -1)):
-            mid = ((p[0] + q[0]) / 2 - o[0], 0, (p[1] + q[1]) / 2 - o[1])
-            u0, u1 = NEEDLE[0], NEEDLE[0] + (NEEDLE[2] - NEEDLE[0]) * .25
-            m.face([(p[0], yf, p[1]), (q[0], yf, q[1]), (q[0], yb, q[1]), (p[0], yb, p[1])],
-                   [(u0, uvp(*p)[1]), (u0, uvp(*q)[1]), (u1, uvp(*q)[1]), (u1, uvp(*p)[1])], tuple(sign * v for v in mid))
-    if lod == 0:  # luz de balizaje y pararrayos en la punta
-        m.box((-.35, yc - .35, APEX - 1.6), (.35, yc + .35, APEX - .9), REDL)
-        m.box((-.08, yc - .08, APEX - .9), (.08, yc + .08, APEX), METAL)
-        m.box((TX0 + .5, yf - .3, NB - .2), (TX1 - .5, yb + .3, NB + 1.0), SPAND)   # junta entre aguja y torre
-
-def podium(m, lod):
-    bay = 6.0
-    if lod == 2:
-        for (px, py), (ux, uy), _, w in sides_of(PX0, PY0, PX1, PY1):
-            m.quad((px, py, 0), (ux * w, uy * w, 0), (0, 0, PH), PODWIN)
-        m.quad((PX0, PY0, PH), (PX1 - PX0, 0, 0), (0, PY1 - PY0, 0), ROOF); return
-    AY = PY0 + 3.0  # fondo del soportal
-    for i in range(10):  # fachada a la calle: locales bajo soportal, ventana corrida arriba
-        x = PX0 + i * bay
-        m.quad((x, AY, 0), (bay, 0, 0), (0, 0, 5), SHOP)
-        m.quad((x, PY0, 5), (bay, 0, 0), (0, 0, 5), PODWIN)
-    m.quad((PX0, AY, 5), (PX1 - PX0, 0, 0), (0, -(AY - PY0), 0), SPAND)      # techo del soportal
-    for (px, py), (ux, uy), _, w in sides_of(PX0, PY0, PX1, PY1)[1:]:
-        nb = max(1, round(w / bay)); bw = w / nb
-        for i in range(nb):
-            p = (px + ux * i * bw, py + uy * i * bw)
-            m.quad((p[0], p[1], 0), (ux * bw, uy * bw, 0), (0, 0, 5), GRAN if i % 3 else SHOP)
-            m.quad((p[0], p[1], 5), (ux * bw, uy * bw, 0), (0, 0, 5), PODWIN)
-    if lod == 0:
-        m.quad((PX0, PY0, 0), (0, AY - PY0, 0), (0, 0, 5), GRAN); m.quad((PX1, AY, 0), (0, -(AY - PY0), 0), (0, 0, 5), GRAN)
-        for i in range(11):  # pilares de granito
-            x = PX0 + i * bay
-            m.box((x - .35, PY0, 0), (x + .35, PY0 + .7, 5), GRAN)
-        m.box((PX0 - .25, PY0 - .25, 4.8), (PX1 + .25, PY1 + .25, 5.3), SPAND, bottom=True)     # imposta
-        m.box((-6.5, PY0 - 1.8, 4.2), (6.5, PY0 + .1, 4.6), METAL, bottom=True)                    # marquesina de entrada
-        for x in (-6.2, 6.2): m.box((x - .1, PY0 - 1.7, 0), (x + .1, PY0 - 1.5, 4.2), METAL)
-    m.quad((PX0, PY0, PH), (PX1 - PX0, 0, 0), (0, PY1 - PY0, 0), ROOF)
-    t = .35
-    for a, b in [((PX0, PY0, PH), (PX1, PY0 + t, PH + 1.1)), ((PX0, PY1 - t, PH), (PX1, PY1, PH + 1.1)),
-                 ((PX0, PY0, PH), (PX0 + t, PY1, PH + 1.1)), ((PX1 - t, PY0, PH), (PX1, PY1, PH + 1.1))]:
-        m.box(a, b, GRAN)
-    if lod == 0:  # terraza del podio: jardineras, claraboyas y bancas
-        for x in (-24, -14, 14, 24):
-            m.box((x - 3, -16, PH), (x + 3, -12, PH + .8), GRAN, top=GRASS)
-        for x in (-20, -6, 8, 20):
-            m.box((x - 2, -6, PH), (x + 2, -2, PH + 1.2), METAL)
-        for x in (-19, -9, 9, 19):
-            m.box((x - 1.2, -19, PH), (x + 1.2, -18.4, PH + .45), SPAND)
+        xfaces([a, b, c, d])
+        # paredes del ojo
+        mid = ((d[0] + c[0]) / 2 - o[0], (d[1] + c[1]) / 2 - o[1])
+        va, vb = uvx(*d)[1], uvx(*c)[1]
+        m.face([(X0, d[0], d[1]), (X1, d[0], d[1]), (X1, c[0], c[1]), (X0, c[0], c[1])],
+               [(NEEDLE[0], va), (NEEDLE[2], va), (NEEDLE[2], vb), (NEEDLE[0], vb)], (0, -mid[0], -mid[1]))
+        # paredes exteriores: techo curvo y fachada trasera (no la base ni el corte interior)
+        if abs(a[1] - HC0) < 1e-6 and abs(b[1] - HC0) < 1e-6: continue
+        if abs(a[0] - yat(tc)) < 1e-6 and abs(b[0] - yat(tc)) < 1e-6: continue
+        if abs(a[0] - Y1) < 1e-6 and abs(b[0] - Y1) < 1e-6:
+            m.face([(X1, a[0], a[1]), (X0, a[0], a[1]), (X0, b[0], b[1]), (X1, b[0], b[1])],
+                   [(NEEDLE[0], uvx(*a)[1]), (NEEDLE[2], uvx(*a)[1]), (NEEDLE[2], uvx(*b)[1]), (NEEDLE[0], uvx(*b)[1])], (0, 1, 0)); continue
+        y0, z0, y1, z1 = (a[0], a[1], b[0], b[1]) if a[0] < b[0] else (b[0], b[1], a[0], a[1])
+        roof_strip(y0, z0, y1, z1)
+    if lod == 0:  # baliza roja y pararrayos en la punta
+        m.box((-.4, Y1 - .9, HC1), (.4, Y1 - .1, HC1 + .7), REDL)
+        m.box((-.08, Y1 - .58, HC1 + .7), (.08, Y1 - .42, HC1 + 2.5), METAL)
 
 def plaza(m):
-    m.quad((-32, -24, .02), (64, 0, 0), (0, 2, 0), PAVE)
-    m.quad((-32, -22, .02), (2, 0, 0), (0, 46, 0), PAVE); m.quad((30, -22, .02), (2, 0, 0), (0, 46, 0), PAVE)
-    m.quad((-32, 22, .02), (64, 0, 0), (0, 2, 0), PAVE)
-    for x in (-27, -15, 15, 27): m.box((x - 1, -23.8, 0), (x + 1, -22.6, .6), GRAN, top=GRASS)
+    m.quad((-24, -24, .02), (24 - BX / 2, 0, 0), (0, 48, 0), PAVE)
+    m.quad((BX / 2, -24, .02), (24 - BX / 2, 0, 0), (0, 48, 0), PAVE)
+    for x in (-22.6, 22.6):
+        for y in (-14, 0, 14): m.box((x - .7, y - 2, 0), (x + .7, y + 2, .6), GRAN, top=GRASS)
 
 # ---------- material ----------
 mat = bpy.data.materials.new(NAME); nt = mat.node_tree; bsdf = nt.nodes['Principled BSDF']
@@ -204,7 +206,7 @@ nt.links.new(em.outputs['Color'], bsdf.inputs['Emission Color']); bsdf.inputs['E
 
 objs = []
 for lod in range(3):
-    m = Mesh(); tower(m, lod); needle(m, lod); podium(m, lod)
+    m = Mesh(); base(m, lod); shaft(m, lod); crown(m, lod)
     if lod < 2: plaza(m)
     objs.append(m.obj(NAME + ('' if lod == 0 else f'_LOD{lod}'), mat))
 
@@ -236,7 +238,7 @@ if RENDER:
         bg.inputs['Color'].default_value = (.02, .03, .07, 1) if night else (.55, .7, .92, 1); bg.inputs['Strength'].default_value = .5 if night else .9
         bsdf.inputs['Emission Strength'].default_value = 4.0 if night else 0
         sc.render.filepath = path; bpy.ops.render.render(write_still=True)
-    shot(RENDER + '_dia.png', (-120, -190, 45), (0, 0, 82), 30, (1000, 1400))
-    shot(RENDER + '_aguja.png', (-55, -80, 150), (0, 12, 150), 45, (1200, 1200))
-    shot(RENDER + '_noche.png', (95, -200, 30), (0, 0, 85), 30, (1000, 1400), night=True)
+    shot(RENDER + '_dia.png', (-130, -170, 40), (0, 0, 85), 30, (1000, 1400))
+    shot(RENDER + '_aguja.png', (-95, -30, 168), (0, 4, 152), 40, (1200, 1200))
+    shot(RENDER + '_noche.png', (150, -150, 30), (0, 0, 85), 30, (1000, 1400), night=True)
     print('render listo')
