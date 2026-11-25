@@ -15,7 +15,8 @@ LONG = [R(0, v * 128, S, 128) for v in range(8)]
 SHORT = [R(0, 1024 + v * 128, S, 128) for v in range(8)]
 FIN, SPAND, NEEDLE, ROOF, PAVE = R(0, 2048, 512, 1024), R(512, 2048, 512, 1024), R(1024, 2048, 1024, 1024), R(2048, 2048, 1024, 1024), R(3072, 2048, 1024, 1024)
 SHOP, PODWIN, GRAN = R(0, 3072, 1024, 1024), R(1024, 3072, 1024, 1024), R(2048, 3072, 1024, 1024)
-METAL, GRASS, REDL = R(3072, 3072, 1024, 512), R(3072, 3584, 512, 512), R(3584, 3584, 512, 512)
+METAL, GRASS, REDL = R(3072, 3072, 1024, 512), R(3072, 3584, 512, 512), R(3584, 3584, 256, 256)
+FLAG_CO, FLAG_ANT = R(3840, 3600, 256, 168, 1), R(3584, 3860, 256, 168, 1)
 
 V = mathutils.Vector
 class Mesh:
@@ -186,6 +187,23 @@ def crown(m, lod):
         m.box((-.4, Y1 - .9, HC1), (.4, Y1 - .1, HC1 + .7), REDL)
         m.box((-.08, Y1 - .58, HC1 + .7), (.08, Y1 - .42, HC1 + 2.5), METAL)
 
+def flags(m, lod):
+    """Astas con las banderas de Colombia y de Antioquia en la plazoleta, a ambos lados de la fachada principal."""
+    for x, fl in ((-22.7, FLAG_CO), (22.7, FLAG_ANT)):
+        y, ph = -21.0, 16.0
+        m.box((x - .45, y - .45, 0), (x + .45, y + .45, .5), GRAN)                       # pedestal
+        m.box((x - .09, y - .09, .5), (x + .09, y + .09, ph), METAL)                       # asta
+        if lod == 0: m.box((x - .14, y - .14, ph), (x + .14, y + .14, ph + .25), METAL)  # remate
+        # tela: 3 x 2 m, ondulada, hacia +Y (dentro de la parcela) y por las dos caras
+        nseg = 10 if lod == 0 else 3; fw, fh = 4.5, 3.0; z1 = ph - .15
+        pts = [(x + (.45 * math.sin(math.pi * 1.6 * k / nseg) * (k / nseg)) * (1 if lod == 0 else 0), y + .07 + fw * k / nseg) for k in range(nseg + 1)]
+        for k in range(nseg):
+            (xa, ya), (xb, yb) = pts[k], pts[k + 1]
+            ua = fl[0] + (fl[2] - fl[0]) * k / nseg; ub = fl[0] + (fl[2] - fl[0]) * (k + 1) / nseg
+            quad = [(xa, ya, z1 - fh), (xb, yb, z1 - fh), (xb, yb, z1), (xa, ya, z1)]
+            uv = [(ua, fl[1]), (ub, fl[1]), (ub, fl[3]), (ua, fl[3])]
+            m.face(quad, uv, (1, 0, 0)); m.face(quad, uv, (-1, 0, 0))
+
 def plaza(m):
     m.quad((-24, -24, .02), (24 - BX / 2, 0, 0), (0, 48, 0), PAVE)
     m.quad((BX / 2, -24, .02), (24 - BX / 2, 0, 0), (0, 48, 0), PAVE)
@@ -207,7 +225,7 @@ nt.links.new(em.outputs['Color'], bsdf.inputs['Emission Color']); bsdf.inputs['E
 objs = []
 for lod in range(3):
     m = Mesh(); base(m, lod); shaft(m, lod); crown(m, lod)
-    if lod < 2: plaza(m)
+    if lod < 2: plaza(m); flags(m, lod)
     objs.append(m.obj(NAME + ('' if lod == 0 else f'_LOD{lod}'), mat))
 
 for o in objs:
@@ -240,5 +258,6 @@ if RENDER:
         sc.render.filepath = path; bpy.ops.render.render(write_still=True)
     shot(RENDER + '_dia.png', (-130, -170, 40), (0, 0, 85), 30, (1000, 1400))
     shot(RENDER + '_aguja.png', (-95, -30, 168), (0, 4, 152), 40, (1200, 1200))
+    shot(RENDER + '_banderas.png', (0, -78, 9), (0, -18, 13), 26, (1400, 1000))
     shot(RENDER + '_noche.png', (150, -150, 30), (0, 0, 85), 30, (1000, 1400), night=True)
     print('render listo')

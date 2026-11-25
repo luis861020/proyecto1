@@ -112,7 +112,18 @@ for k in range(0, C, 256): col[3072 + k:3072 + k + 4, 2048:3072] *= .8; hgt[3072
 # metal, césped, luz de balizaje
 surface(3072, 3072, C, 512, '#8f9498', .03, 1, 32, sm=.55, m=.9)
 surface(3072, 3584, 512, 512, '#4f7f3a', .25, 1, sm=.1)
-surface(3584, 3584, 512, 512, '#d0241b', .02, 8, sm=.6); emi[3584:4096, 3584:4096] = hexc('#ff2a1a') * 1.0
+surface(3584, 3584, 256, 256, '#d0241b', .02, 8, sm=.6); emi[3584:3840, 3584:3840] = hexc('#ff2a1a') * 1.0
+# banderas (256 x 168 px, proporción 3:2) con pliegues suaves de tela
+def flag(x, y, bands):
+    W, H = 256, 168; yy = 0
+    for colr, frac in bands:
+        h = round(H * frac); col[y + yy:y + yy + h, x:x + W] = hexc(colr); yy += h
+    xs = np.arange(W)[None, :]; fold = (np.sin(xs / W * 2 * np.pi * 2.2) * .07)[..., None]
+    col[y:y + H, x:x + W] *= 1 + fold + noise(H, W, 2, 2, .03)[..., None]
+    hgt[y:y + H, x:x + W] = np.sin(xs / W * 2 * np.pi * 2.2) * .3; smo[y:y + H, x:x + W] = .15; met[y:y + H, x:x + W] = 0
+surface(3840, 3584, 256, 512, '#8f9498', .03, 1, 32, sm=.55, m=.9); surface(3584, 3840, 256, 256, '#8f9498', .03, 1, 32, sm=.55, m=.9)
+flag(3840, 3600, [('#fcd116', .5), ('#003893', .25), ('#ce1126', .25)])     # Colombia: amarillo, azul, rojo (2:1:1)
+flag(3584, 3860, [('#ffffff', .5), ('#00843d', .5)])                         # Antioquia: blanco y verde
 
 out, name = sys.argv[1], sys.argv[2]
 hb = np.asarray(Image.fromarray(((hgt + 1) * 127).astype(np.uint8)).filter(ImageFilter.GaussianBlur(2)), np.float32) / 127

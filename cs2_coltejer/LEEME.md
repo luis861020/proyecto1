@@ -2,6 +2,8 @@
 
 ![Día, remate y noche](vistas.jpg)
 
+![Banderas de Colombia y Antioquia en la plazoleta](vista_banderas.jpg)
+
 Rascacielos emblemático de Medellín. Una torre de concreto con estrías verticales continuas se ensancha en curva hacia la base. El remate es la "punta de aguja": el techo sube en curva cóncava desde la fachada principal (145 m) hasta la trasera (175 m), y cerca de la punta lo atraviesa un ojo alargado.
 
 ## De dónde sale cada medida
@@ -14,6 +16,7 @@ Rascacielos emblemático de Medellín. Una torre de concreto con estrías vertic
 | Base ensanchada en curva, estrías verticales, remate cóncavo con ojo | — | Captura de referencia (`referencia/captura_modelo_3d.png`) |
 | Fuste de 32 × 37 m, arranque del remate a 145 m, ensanche hasta 26 m | — | **Estimado** a partir de la captura, que tiene perspectiva |
 | Tamaño y posición exactos del ojo | — | **Estimado** |
+| Banderas | Colombia (amarillo, azul y rojo en proporción 2:1:1) y Antioquia (blanco y verde) | Astas de 16 m con telas de 4,5 × 3 m en la plazoleta, a cada lado de la fachada principal |
 
 Con capturas de frente y de lado del mismo modelo, o con el archivo `.stl`, puedo afinar estas medidas. Todas las cotas están al principio de `fuente/modelo_coltejer.py`.
 
@@ -22,8 +25,8 @@ Con capturas de frente y de lado del mismo modelo, o con el archivo `.stl`, pued
 | | |
 |---|---|
 | Parcela | 6 × 6 celdas (48 × 48 m) |
-| LOD0 | 2.730 triángulos. Incluye estrías en las cuatro caras (en los laterales siguen la curva del remate), antepechos por planta, pilares de esquina, base ensanchada, locales en planta baja, remate cóncavo con ojo pasante, pararrayos, baliza roja, marquesinas laterales y jardineras |
-| LOD1 | 1.012 triángulos: sin estrías ni antepechos salientes, curvas con menos segmentos |
+| LOD0 | 2.870 triángulos. Incluye estrías en las cuatro caras (en los laterales siguen la curva del remate), antepechos por planta, pilares de esquina, base ensanchada, locales en planta baja, remate cóncavo con ojo pasante, pararrayos, baliza roja, marquesinas laterales, jardineras y las banderas de Colombia y Antioquia |
+| LOD1 | 1.076 triángulos: sin estrías ni antepechos salientes, curvas y banderas con menos segmentos |
 | LOD2 | 60 triángulos: volumen básico |
 | Texturas | Atlas de 4096 × 4096 px: color, relieve, MaskMap y Emissive |
 | Noche | Luz en cerca de la mitad de las oficinas, con 8 variantes por planta para que no se repita. Locales encendidos, remate iluminado con reflectores y baliza roja |
